@@ -253,6 +253,21 @@ export default function Show({ event }) {
                                 Schedule / Timeline
                             </Link>
 
+                            <Link
+                                href={route('events.staff.index', event.id)}
+                                style={{
+                                    display: 'inline-flex',
+                                    backgroundColor: '#0d9488',
+                                    color: '#ffffff',
+                                    padding: '10px 16px',
+                                    borderRadius: '8px',
+                                    fontWeight: '700',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                Staff Assignment
+                            </Link>
+
                             {can(auth, 'delete own events') && (
                                 <button
                                     type="button"

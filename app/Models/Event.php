@@ -63,4 +63,9 @@ class Event extends Model
     {
         return $this->hasMany(\App\Models\EventSchedule::class);
     }
+
+    public function staff()
+    {
+        return $this->hasMany(\App\Models\EventStaff::class);
+    }
 }

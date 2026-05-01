@@ -15,6 +15,7 @@ use App\Http\Controllers\EventTaskController;
 use App\Http\Controllers\EventExpenseController;
 use App\Http\Controllers\EventVendorController;
 use App\Http\Controllers\EventScheduleController;
+use App\Http\Controllers\EventStaffController;
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -190,5 +191,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/events/{event}/schedules/{schedule}', [EventScheduleController::class, 'destroy'])
         ->name('events.schedules.destroy');
+
+    Route::get('/events/{event}/staff', [EventStaffController::class, 'index'])
+        ->name('events.staff.index');
+
+    Route::get('/events/{event}/staff/create', [EventStaffController::class, 'create'])
+        ->name('events.staff.create');
+
+    Route::post('/events/{event}/staff', [EventStaffController::class, 'store'])
+        ->name('events.staff.store');
+
+    Route::get('/events/{event}/staff/{staff}/edit', [EventStaffController::class, 'edit'])
+        ->name('events.staff.edit');
+
+    Route::put('/events/{event}/staff/{staff}', [EventStaffController::class, 'update'])
+        ->name('events.staff.update');
+
+    Route::delete('/events/{event}/staff/{staff}', [EventStaffController::class, 'destroy'])
+        ->name('events.staff.destroy');
 
 require __DIR__.'/auth.php';
