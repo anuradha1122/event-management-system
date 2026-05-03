@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EventAnswer;
 use App\Models\EventInvitation;
+use App\Services\EventActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +44,7 @@ class PublicInvitationController extends Controller
             ->with([
                 'guest',
                 'event.questions',
+                'answers',
             ])
             ->firstOrFail();
 
@@ -68,17 +70,29 @@ class PublicInvitationController extends Controller
 
         $validated = $request->validate($rules);
 
-        $invitation->guest->update([
+        $guest = $invitation->guest;
+        $event = $invitation->event;
+
+        $oldGuestData = [
+            'status' => $guest->status,
+            'guest_count' => $guest->guest_count,
+        ];
+
+        $newGuestCount = $validated['status'] === 'accepted'
+            ? ($validated['guest_count'] ?? 0)
+            : 0;
+
+        $guest->update([
             'status' => $validated['status'],
-            'guest_count' => $validated['status'] === 'accepted'
-                ? ($validated['guest_count'] ?? 0)
-                : 0,
+            'guest_count' => $newGuestCount,
         ]);
 
-        foreach ($invitation->event->questions as $question) {
+        $savedAnswers = [];
+
+        foreach ($event->questions as $question) {
             $answer = $validated['answers'][$question->id] ?? null;
 
-            EventAnswer::updateOrCreate(
+            $eventAnswer = EventAnswer::updateOrCreate(
                 [
                     'invitation_id' => $invitation->id,
                     'question_id' => $question->id,
@@ -87,11 +101,58 @@ class PublicInvitationController extends Controller
                     'answer' => $answer,
                 ]
             );
+
+            $savedAnswers[] = [
+                'answer_id' => $eventAnswer->id,
+                'question_id' => $question->id,
+                'question' => $question->question,
+                'question_type' => $question->type,
+                'answer' => $answer,
+            ];
         }
 
         $invitation->update([
             'responded_at' => now(),
         ]);
+
+        $guest->refresh();
+        $invitation->refresh();
+
+        EventActivityLogger::record(
+            event: $event,
+            action: 'rsvp_received',
+            description: "RSVP received from guest {$guest->name}.",
+            subject: $guest,
+            properties: [
+                'guest_id' => $guest->id,
+                'guest_name' => $guest->name,
+                'guest_email' => $guest->email,
+                'guest_phone' => $guest->phone,
+                'old_status' => $oldGuestData['status'],
+                'new_status' => $guest->status,
+                'old_guest_count' => $oldGuestData['guest_count'],
+                'new_guest_count' => $guest->guest_count,
+                'invitation_id' => $invitation->id,
+                'token' => $invitation->token,
+                'responded_at' => optional($invitation->responded_at)->format('Y-m-d H:i:s'),
+            ],
+            userId: null
+        );
+
+        EventActivityLogger::record(
+            event: $event,
+            action: 'rsvp_answers_saved',
+            description: "RSVP answers saved for guest {$guest->name}.",
+            subject: $invitation,
+            properties: [
+                'guest_id' => $guest->id,
+                'guest_name' => $guest->name,
+                'invitation_id' => $invitation->id,
+                'answers' => $savedAnswers,
+                'answers_count' => count($savedAnswers),
+            ],
+            userId: null
+        );
 
         return redirect()
             ->route('invite.show', $token)

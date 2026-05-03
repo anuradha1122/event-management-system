@@ -9,6 +9,7 @@ class EventSchedule extends Model
 {
     protected $fillable = [
         'event_id',
+        'staff_id',
         'title',
         'description',
         'schedule_date',
@@ -27,5 +28,10 @@ class EventSchedule extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(EventStaff::class, 'staff_id');
     }
 }

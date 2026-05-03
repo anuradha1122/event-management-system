@@ -38,6 +38,7 @@ class EventStaffController extends Controller
                 'title' => $event->title,
                 'event_date' => $event->event_date,
                 'venue' => $event->venue,
+                'status' => $event->status,
             ],
             'staff' => $staff->map(function (EventStaff $staffMember) {
                 return [
@@ -59,14 +60,19 @@ class EventStaffController extends Controller
         ]);
     }
 
-    public function create(Event $event): Response
+    public function create(Event $event): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventStaff/Create', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'statuses' => $this->statuses(),
         ]);
@@ -75,6 +81,10 @@ class EventStaffController extends Controller
     public function store(Request $request, Event $event): RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -94,15 +104,20 @@ class EventStaffController extends Controller
             ->with('success', 'Staff member created successfully.');
     }
 
-    public function edit(Event $event, EventStaff $staff): Response
+    public function edit(Event $event, EventStaff $staff): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
         $this->ensureStaffBelongsToEvent($event, $staff);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventStaff/Edit', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'staffMember' => [
                 'id' => $staff->id,
@@ -121,6 +136,10 @@ class EventStaffController extends Controller
     {
         $this->authorizeEventAccess($event);
         $this->ensureStaffBelongsToEvent($event, $staff);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -143,6 +162,10 @@ class EventStaffController extends Controller
         $this->authorizeEventAccess($event);
         $this->ensureStaffBelongsToEvent($event, $staff);
 
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
+
         $staff->delete();
 
         return redirect()
@@ -154,6 +177,10 @@ class EventStaffController extends Controller
     {
         $user = auth()->user();
 
+        if (! $user) {
+            abort(403);
+        }
+
         if ($user->hasRole('Super Admin')) {
             return;
         }
@@ -161,6 +188,17 @@ class EventStaffController extends Controller
         if ((int) $event->user_id !== (int) $user->id) {
             abort(403);
         }
+    }
+
+    private function preventClosedEventModification(Event $event): ?RedirectResponse
+    {
+        if (in_array($event->status, ['completed', 'cancelled'], true)) {
+            return redirect()
+                ->route('events.staff.index', $event)
+                ->with('error', 'This event is closed and staff assignments cannot be modified.');
+        }
+
+        return null;
     }
 
     private function ensureStaffBelongsToEvent(Event $event, EventStaff $staff): void

@@ -25,9 +25,13 @@ class EventQuestionController extends Controller
         ]);
     }
 
-    public function create(Event $event): Response
+    public function create(Event $event): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('Questions/Create', [
             'event' => $event,
@@ -38,6 +42,10 @@ class EventQuestionController extends Controller
     {
         $this->authorizeEventAccess($event);
 
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
+
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:text,textarea,number,select,radio'],
@@ -47,7 +55,7 @@ class EventQuestionController extends Controller
 
         $options = null;
 
-        if (in_array($validated['type'], ['select', 'radio'])) {
+        if (in_array($validated['type'], ['select', 'radio'], true)) {
             $options = collect(explode("\n", $validated['options'] ?? ''))
                 ->map(fn ($option) => trim($option))
                 ->filter()
@@ -80,7 +88,11 @@ class EventQuestionController extends Controller
     {
         $this->authorizeEventAccess($event);
 
-        abort_unless($question->event_id === $event->id, 403);
+        abort_unless((int) $question->event_id === (int) $event->id, 403);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $question->delete();
 
@@ -93,10 +105,23 @@ class EventQuestionController extends Controller
     {
         $user = auth()->user();
 
+        abort_unless($user, 403);
+
         if ($user->hasRole('Super Admin')) {
             return;
         }
 
-        abort_unless($event->user_id === $user->id, 403);
+        abort_unless((int) $event->user_id === (int) $user->id, 403);
+    }
+
+    private function preventClosedEventModification(Event $event): ?RedirectResponse
+    {
+        if (in_array($event->status, ['completed', 'cancelled'], true)) {
+            return redirect()
+                ->route('events.questions.index', $event)
+                ->with('error', 'This event is closed and RSVP questions cannot be modified.');
+        }
+
+        return null;
     }
 }

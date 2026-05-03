@@ -40,6 +40,7 @@ class EventVendorController extends Controller
                 'title' => $event->title,
                 'event_date' => $event->event_date,
                 'venue' => $event->venue,
+                'status' => $event->status,
             ],
             'vendors' => $vendors->map(function (EventVendor $vendor) {
                 return [
@@ -63,14 +64,19 @@ class EventVendorController extends Controller
         ]);
     }
 
-    public function create(Event $event): Response
+    public function create(Event $event): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventVendors/Create', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'categories' => $this->categories(),
             'statuses' => $this->statuses(),
@@ -80,6 +86,10 @@ class EventVendorController extends Controller
     public function store(Request $request, Event $event): RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -101,15 +111,20 @@ class EventVendorController extends Controller
             ->with('success', 'Vendor created successfully.');
     }
 
-    public function edit(Event $event, EventVendor $vendor): Response
+    public function edit(Event $event, EventVendor $vendor): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
         $this->ensureVendorBelongsToEvent($event, $vendor);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventVendors/Edit', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'vendor' => [
                 'id' => $vendor->id,
@@ -131,6 +146,10 @@ class EventVendorController extends Controller
     {
         $this->authorizeEventAccess($event);
         $this->ensureVendorBelongsToEvent($event, $vendor);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -155,6 +174,10 @@ class EventVendorController extends Controller
         $this->authorizeEventAccess($event);
         $this->ensureVendorBelongsToEvent($event, $vendor);
 
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
+
         $vendor->delete();
 
         return redirect()
@@ -166,6 +189,10 @@ class EventVendorController extends Controller
     {
         $user = auth()->user();
 
+        if (! $user) {
+            abort(403);
+        }
+
         if ($user->hasRole('Super Admin')) {
             return;
         }
@@ -173,6 +200,17 @@ class EventVendorController extends Controller
         if ((int) $event->user_id !== (int) $user->id) {
             abort(403);
         }
+    }
+
+    private function preventClosedEventModification(Event $event): ?RedirectResponse
+    {
+        if (in_array($event->status, ['completed', 'cancelled'], true)) {
+            return redirect()
+                ->route('events.vendors.index', $event)
+                ->with('error', 'This event is closed and vendors cannot be modified.');
+        }
+
+        return null;
     }
 
     private function ensureVendorBelongsToEvent(Event $event, EventVendor $vendor): void

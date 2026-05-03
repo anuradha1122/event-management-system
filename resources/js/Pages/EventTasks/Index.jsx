@@ -201,7 +201,7 @@ export default function Index({ auth, event, tasks, summary }) {
                                     Due Date
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-600">
-                                    Assigned To
+                                    Assigned Staff
                                 </th>
                                 <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-600">
                                     Actions
@@ -248,7 +248,36 @@ export default function Index({ auth, event, tasks, summary }) {
                                         </td>
 
                                         <td className="px-4 py-4 align-top text-sm text-gray-700">
-                                            {task.assigned_to || '-'}
+                                            {task.staff ? (
+                                                <div>
+                                                    <div className="font-semibold text-gray-900">
+                                                        {task.staff.name}
+                                                    </div>
+
+                                                    {task.staff.role && (
+                                                        <div className="text-xs text-gray-500">
+                                                            {task.staff.role}
+                                                        </div>
+                                                    )}
+
+                                                    {task.staff.phone && (
+                                                        <div className="text-xs text-gray-500">
+                                                            {task.staff.phone}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : task.assigned_to ? (
+                                                <div>
+                                                    <div className="font-semibold text-gray-700">
+                                                        {task.assigned_to}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Manual assignment
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                '-'
+                                            )}
                                         </td>
 
                                         <td className="px-4 py-4 align-top">

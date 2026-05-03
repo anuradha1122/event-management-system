@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Edit({ auth, event, schedule, statuses }) {
+export default function Edit({ auth, event, schedule, statuses, staffMembers }) {
     const { data, setData, put, processing, errors } = useForm({
+        staff_id: schedule.staff_id || '',
         title: schedule.title || '',
         description: schedule.description || '',
         schedule_date: schedule.schedule_date || '',
@@ -70,6 +71,54 @@ export default function Edit({ auth, event, schedule, statuses }) {
                                     {errors.title}
                                 </div>
                             )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <div>
+                                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                    Select Staff Member
+                                </label>
+
+                                <select
+                                    value={data.staff_id}
+                                    onChange={(e) => setData('staff_id', e.target.value)}
+                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option value="">No selected staff</option>
+
+                                    {staffMembers.map((staff) => (
+                                        <option key={staff.id} value={staff.id}>
+                                            {staff.name}{staff.role ? ` - ${staff.role}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {errors.staff_id && (
+                                    <div className="mt-1 text-sm text-red-600">
+                                        {errors.staff_id}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                    Manual Assigned To
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={data.assigned_to}
+                                    onChange={(e) => setData('assigned_to', e.target.value)}
+                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="Use only if staff is not saved"
+                                />
+
+                                {errors.assigned_to && (
+                                    <div className="mt-1 text-sm text-red-600">
+                                        {errors.assigned_to}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div>
@@ -150,44 +199,23 @@ export default function Edit({ auth, event, schedule, statuses }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                            <div>
-                                <label className="mb-1 block text-sm font-semibold text-gray-700">
-                                    Location
-                                </label>
+                        <div>
+                            <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                Location
+                            </label>
 
-                                <input
-                                    type="text"
-                                    value={data.location}
-                                    onChange={(e) => setData('location', e.target.value)}
-                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
+                            <input
+                                type="text"
+                                value={data.location}
+                                onChange={(e) => setData('location', e.target.value)}
+                                className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
 
-                                {errors.location && (
-                                    <div className="mt-1 text-sm text-red-600">
-                                        {errors.location}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-sm font-semibold text-gray-700">
-                                    Assigned To
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={data.assigned_to}
-                                    onChange={(e) => setData('assigned_to', e.target.value)}
-                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
-
-                                {errors.assigned_to && (
-                                    <div className="mt-1 text-sm text-red-600">
-                                        {errors.assigned_to}
-                                    </div>
-                                )}
-                            </div>
+                            {errors.location && (
+                                <div className="mt-1 text-sm text-red-600">
+                                    {errors.location}
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">

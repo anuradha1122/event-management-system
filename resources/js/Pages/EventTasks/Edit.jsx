@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Edit({ auth, event, task }) {
+export default function Edit({ auth, event, task, staffMembers }) {
     const { data, setData, put, processing, errors } = useForm({
+        staff_id: task.staff_id || '',
         title: task.title || '',
         description: task.description || '',
         priority: task.priority || 'medium',
@@ -67,6 +68,54 @@ export default function Edit({ auth, event, task }) {
                                     {errors.title}
                                 </div>
                             )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <div>
+                                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                    Select Staff Member
+                                </label>
+
+                                <select
+                                    value={data.staff_id}
+                                    onChange={(e) => setData('staff_id', e.target.value)}
+                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                    <option value="">No selected staff</option>
+
+                                    {staffMembers.map((staff) => (
+                                        <option key={staff.id} value={staff.id}>
+                                            {staff.name}{staff.role ? ` - ${staff.role}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {errors.staff_id && (
+                                    <div className="mt-1 text-sm text-red-600">
+                                        {errors.staff_id}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                    Manual Assigned To
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={data.assigned_to}
+                                    onChange={(e) => setData('assigned_to', e.target.value)}
+                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="Use only if staff is not saved"
+                                />
+
+                                {errors.assigned_to && (
+                                    <div className="mt-1 text-sm text-red-600">
+                                        {errors.assigned_to}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div>
@@ -134,44 +183,23 @@ export default function Edit({ auth, event, task }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                            <div>
-                                <label className="mb-1 block text-sm font-semibold text-gray-700">
-                                    Due Date
-                                </label>
+                        <div>
+                            <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                Due Date
+                            </label>
 
-                                <input
-                                    type="date"
-                                    value={data.due_date}
-                                    onChange={(e) => setData('due_date', e.target.value)}
-                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
+                            <input
+                                type="date"
+                                value={data.due_date}
+                                onChange={(e) => setData('due_date', e.target.value)}
+                                className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
 
-                                {errors.due_date && (
-                                    <div className="mt-1 text-sm text-red-600">
-                                        {errors.due_date}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-sm font-semibold text-gray-700">
-                                    Assigned To
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={data.assigned_to}
-                                    onChange={(e) => setData('assigned_to', e.target.value)}
-                                    className="w-full rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
-
-                                {errors.assigned_to && (
-                                    <div className="mt-1 text-sm text-red-600">
-                                        {errors.assigned_to}
-                                    </div>
-                                )}
-                            </div>
+                            {errors.due_date && (
+                                <div className="mt-1 text-sm text-red-600">
+                                    {errors.due_date}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-3">

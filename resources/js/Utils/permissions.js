@@ -1,17 +1,17 @@
 export function hasRole(auth, role) {
-    return auth?.roles?.includes(role);
-}
+    const roles = auth?.roles || auth?.user?.roles || [];
 
-export function hasAnyRole(auth, roles = []) {
-    return roles.some((role) => auth?.roles?.includes(role));
+    return roles.includes(role);
 }
 
 export function can(auth, permission) {
-    return auth?.permissions?.includes(permission);
-}
+    const roles = auth?.roles || auth?.user?.roles || [];
+    const permissions = auth?.permissions || auth?.user?.permissions || [];
 
-export function canAny(auth, permissions = []) {
-    return permissions.some((permission) =>
-        auth?.permissions?.includes(permission)
-    );
+    // Super Admin can do everything in frontend UI
+    if (roles.includes('Super Admin')) {
+        return true;
+    }
+
+    return permissions.includes(permission);
 }

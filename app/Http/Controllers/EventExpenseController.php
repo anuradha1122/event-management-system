@@ -35,6 +35,7 @@ class EventExpenseController extends Controller
                 'title' => $event->title,
                 'event_date' => $event->event_date,
                 'venue' => $event->venue,
+                'status' => $event->status,
             ],
             'expenses' => $expenses->map(function (EventExpense $expense) {
                 return [
@@ -69,14 +70,19 @@ class EventExpenseController extends Controller
         ]);
     }
 
-    public function create(Event $event): Response
+    public function create(Event $event): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventExpenses/Create', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'categories' => $this->categories(),
             'paymentStatuses' => $this->paymentStatuses(),
@@ -87,6 +93,10 @@ class EventExpenseController extends Controller
     public function store(Request $request, Event $event): RedirectResponse
     {
         $this->authorizeEventAccess($event);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'vendor_id' => ['nullable', 'integer', 'exists:event_vendors,id'],
@@ -116,15 +126,20 @@ class EventExpenseController extends Controller
             ->with('success', 'Expense created successfully.');
     }
 
-    public function edit(Event $event, EventExpense $expense): Response
+    public function edit(Event $event, EventExpense $expense): Response|RedirectResponse
     {
         $this->authorizeEventAccess($event);
         $this->ensureExpenseBelongsToEvent($event, $expense);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         return Inertia::render('EventExpenses/Edit', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'status' => $event->status,
             ],
             'expense' => [
                 'id' => $expense->id,
@@ -150,6 +165,10 @@ class EventExpenseController extends Controller
     {
         $this->authorizeEventAccess($event);
         $this->ensureExpenseBelongsToEvent($event, $expense);
+
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
 
         $validated = $request->validate([
             'vendor_id' => ['nullable', 'integer', 'exists:event_vendors,id'],
@@ -183,6 +202,10 @@ class EventExpenseController extends Controller
         $this->authorizeEventAccess($event);
         $this->ensureExpenseBelongsToEvent($event, $expense);
 
+        if ($response = $this->preventClosedEventModification($event)) {
+            return $response;
+        }
+
         $expense->delete();
 
         return redirect()
@@ -194,6 +217,10 @@ class EventExpenseController extends Controller
     {
         $user = auth()->user();
 
+        if (! $user) {
+            abort(403);
+        }
+
         if ($user->hasRole('Super Admin')) {
             return;
         }
@@ -201,6 +228,17 @@ class EventExpenseController extends Controller
         if ((int) $event->user_id !== (int) $user->id) {
             abort(403);
         }
+    }
+
+    private function preventClosedEventModification(Event $event): ?RedirectResponse
+    {
+        if (in_array($event->status, ['completed', 'cancelled'], true)) {
+            return redirect()
+                ->route('events.expenses.index', $event)
+                ->with('error', 'This event is closed and expenses cannot be modified.');
+        }
+
+        return null;
     }
 
     private function ensureExpenseBelongsToEvent(Event $event, EventExpense $expense): void
@@ -212,7 +250,7 @@ class EventExpenseController extends Controller
 
     private function ensureVendorBelongsToEventIfSelected(Event $event, mixed $vendorId): void
     {
-        if (!$vendorId) {
+        if (! $vendorId) {
             return;
         }
 
@@ -221,7 +259,7 @@ class EventExpenseController extends Controller
             ->where('event_id', $event->id)
             ->exists();
 
-        if (!$vendorExists) {
+        if (! $vendorExists) {
             abort(404);
         }
     }

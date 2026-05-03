@@ -199,7 +199,7 @@ export default function Index({ auth, event, schedules, summary }) {
                                     Location
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-600">
-                                    Assigned To
+                                    Assigned Staff
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-600">
                                     Status
@@ -244,7 +244,36 @@ export default function Index({ auth, event, schedules, summary }) {
                                         </td>
 
                                         <td className="px-4 py-4 align-top text-sm text-gray-700">
-                                            {schedule.assigned_to || '-'}
+                                            {schedule.staff ? (
+                                                <div>
+                                                    <div className="font-semibold text-gray-900">
+                                                        {schedule.staff.name}
+                                                    </div>
+
+                                                    {schedule.staff.role && (
+                                                        <div className="text-xs text-gray-500">
+                                                            {schedule.staff.role}
+                                                        </div>
+                                                    )}
+
+                                                    {schedule.staff.phone && (
+                                                        <div className="text-xs text-gray-500">
+                                                            {schedule.staff.phone}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : schedule.assigned_to ? (
+                                                <div>
+                                                    <div className="font-semibold text-gray-700">
+                                                        {schedule.assigned_to}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Manual assignment
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                '-'
+                                            )}
                                         </td>
 
                                         <td className="px-4 py-4 align-top">
